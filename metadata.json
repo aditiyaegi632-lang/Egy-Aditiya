@@ -1,0 +1,6 @@
+{
+  "name": "Sistem Manajemen Berkas Notaris",
+  "description": "Dashboard modern dan responsif untuk Sistem Manajemen Berkas Kantor Notaris & PPAT.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
