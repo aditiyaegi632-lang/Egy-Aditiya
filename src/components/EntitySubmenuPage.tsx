@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Archive,
   FileSpreadsheet,
@@ -15,12 +15,15 @@ import {
   FileText
 } from 'lucide-react';
 import { BerkasItem, BerkasJenis, BerkasStatus, KategoriSubmenu } from '../types/notary';
+import { AddBerkasPage } from './AddBerkasPage';
+import { EditBerkasPage } from './EditBerkasPage';
+import { ArsipBerkasPage } from './ArsipBerkasPage';
 
 interface EntitySubmenuPageProps {
   jenis: BerkasJenis;
   kategoriSubmenu?: KategoriSubmenu | null;
   berkasList: BerkasItem[];
-  onAddNew: () => void;
+  onAddNew: (newBerkas: BerkasItem) => void;
   onViewDetail: (item: BerkasItem) => void;
   onEdit: (item: BerkasItem) => void;
   onDelete: (id: string) => void;
@@ -39,10 +42,19 @@ export const EntitySubmenuPage: React.FC<EntitySubmenuPageProps> = ({
   onToggleArchive,
   onBackToDashboard
 }) => {
+  // Navigation sub-views: 'main' | 'add' | 'edit' | 'archive'
+  const [subView, setSubView] = useState<'main' | 'add' | 'edit' | 'archive'>('main');
+  const [editingItem, setEditingItem] = useState<BerkasItem | null>(null);
+
+  // Reset to main view whenever parent menu/submenu changes
+  useEffect(() => {
+    setSubView('main');
+    setEditingItem(null);
+  }, [jenis, kategoriSubmenu]);
+
   // State for search, status filter, archive mode, and delete confirmation
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<BerkasStatus | 'All'>('All');
-  const [viewArchived, setViewArchived] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
 
@@ -75,9 +87,8 @@ export const EntitySubmenuPage: React.FC<EntitySubmenuPageProps> = ({
         }
       }
 
-      // 3. Archive filter
-      const isArchived = Boolean(item.isArchived);
-      if (viewArchived !== isArchived) return false;
+      // 3. Exclude archived items from main table (they have their own Arsip page)
+      if (item.isArchived) return false;
 
       // 4. Status filter
       if (statusFilter !== 'All' && item.status !== statusFilter) return false;
@@ -94,7 +105,7 @@ export const EntitySubmenuPage: React.FC<EntitySubmenuPageProps> = ({
 
       return true;
     });
-  }, [berkasList, jenis, kategoriSubmenu, isLegalService, viewArchived, statusFilter, searchQuery]);
+  }, [berkasList, jenis, kategoriSubmenu, isLegalService, statusFilter, searchQuery]);
 
   // Summary statistics for this entity & category
   const allCategoryItems = useMemo(() => {
@@ -180,6 +191,51 @@ export const EntitySubmenuPage: React.FC<EntitySubmenuPageProps> = ({
     }
   };
 
+  // Sub-view page rendering: Tambah Berkas, Edit Berkas, Arsip Berkas
+  if (subView === 'add') {
+    return (
+      <AddBerkasPage
+        jenis={jenis}
+        kategoriSubmenu={kategoriSubmenu}
+        onBack={() => setSubView('main')}
+        onSave={(newBerkas) => {
+          onAddNew(newBerkas);
+          setSubView('main');
+        }}
+        existingCount={allCategoryItems.length}
+      />
+    );
+  }
+
+  if (subView === 'edit' && editingItem) {
+    return (
+      <EditBerkasPage
+        berkas={editingItem}
+        onBack={() => {
+          setEditingItem(null);
+          setSubView('main');
+        }}
+        onSave={(updated) => {
+          onEdit(updated);
+          setEditingItem(null);
+          setSubView('main');
+        }}
+      />
+    );
+  }
+
+  if (subView === 'archive') {
+    return (
+      <ArsipBerkasPage
+        jenis={jenis}
+        kategoriSubmenu={kategoriSubmenu}
+        berkasList={berkasList}
+        onBack={() => setSubView('main')}
+        onRestore={(id) => onToggleArchive(id)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Breadcrumb / Back button */}
@@ -220,16 +276,12 @@ export const EntitySubmenuPage: React.FC<EntitySubmenuPageProps> = ({
           {/* Tombol Arsip (Warna Abu-abu / Dark Slate) */}
           <button
             type="button"
-            onClick={() => setViewArchived(!viewArchived)}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer ${
-              viewArchived
-                ? 'bg-slate-900 text-white ring-2 ring-slate-800'
-                : 'bg-slate-700 hover:bg-slate-800 text-white'
-            }`}
-            title="Lihat berkas yang telah diarsipkan"
+            onClick={() => setSubView('archive')}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+            title="Buka Halaman Arsip Berkas"
           >
             <Archive className="w-4 h-4 text-slate-200" />
-            <span>{viewArchived ? 'Berkas Aktif' : 'Arsip'}</span>
+            <span>Arsip</span>
           </button>
 
           {/* Tombol Ekspor (Warna Hijau dengan icon Excel/file) */}
@@ -246,7 +298,7 @@ export const EntitySubmenuPage: React.FC<EntitySubmenuPageProps> = ({
           {/* Tombol + Tambah Berkas (Warna Merah Marun/Primary) */}
           <button
             type="button"
-            onClick={onAddNew}
+            onClick={() => setSubView('add')}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#701424] hover:bg-[#85192c] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4 text-white" />
@@ -372,21 +424,6 @@ export const EntitySubmenuPage: React.FC<EntitySubmenuPageProps> = ({
 
       {/* 4. STRUKTUR TABEL DATA UTAMA */}
       <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden">
-        {viewArchived && (
-          <div className="px-6 py-2.5 bg-slate-800 text-white text-xs font-medium flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Archive className="w-4 h-4 text-amber-400" />
-              <span>Menampilkan Berkas yang Diarsipkan ({entityItems.length})</span>
-            </span>
-            <button
-              onClick={() => setViewArchived(false)}
-              className="text-amber-400 underline hover:text-amber-300 font-bold"
-            >
-              Kembali ke Berkas Aktif
-            </button>
-          </div>
-        )}
-
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             {/* Header Tabel (Latar belakang abu-abu terang) */}
@@ -499,7 +536,10 @@ export const EntitySubmenuPage: React.FC<EntitySubmenuPageProps> = ({
                           {/* 2. Icon Pensil (Kuning/Emas) */}
                           <button
                             type="button"
-                            onClick={() => onEdit(item)}
+                            onClick={() => {
+                              setEditingItem(item);
+                              setSubView('edit');
+                            }}
                             className="p-1.5 rounded-lg text-amber-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                             title="Edit Data Berkas"
                           >
@@ -539,7 +579,7 @@ export const EntitySubmenuPage: React.FC<EntitySubmenuPageProps> = ({
                   <td colSpan={hasEntityColumn ? 9 : 8} className="py-12 text-center text-slate-400">
                     <FileText className="w-8 h-8 mx-auto text-slate-300 mb-2" />
                     <p className="font-semibold text-slate-600 text-sm">
-                      Belum ada berkas {pageTitle} {viewArchived ? 'di arsip' : ''}
+                      Belum ada berkas {pageTitle}
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
                       {searchQuery

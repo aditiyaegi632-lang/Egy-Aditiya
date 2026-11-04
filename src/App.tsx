@@ -13,10 +13,15 @@ import { CalendarWidget } from './components/CalendarWidget';
 import { ActivityTable } from './components/ActivityTable';
 import { DocumentTable } from './components/DocumentTable';
 import { FileDetailModal } from './components/FileDetailModal';
+import { DetailBerkasPage } from './components/DetailBerkasPage';
+import { AddBerkasPage } from './components/AddBerkasPage';
+import { EditBerkasPage } from './components/EditBerkasPage';
 import { AddFileModal } from './components/AddFileModal';
 import { EditFileModal } from './components/EditFileModal';
 import { EntitySubmenuPage } from './components/EntitySubmenuPage';
 import { UsersPage } from './components/UsersPage';
+import { ProfilePage } from './components/ProfilePage';
+import { SettingsPage } from './components/SettingsPage';
 import { UserProfileModal } from './components/UserProfileModal';
 import { SettingsModal } from './components/SettingsModal';
 import { INITIAL_BERKAS, RECENT_ACTIVITIES, INITIAL_USERS } from './data/mockData';
@@ -37,6 +42,9 @@ export default function App() {
   // Data states
   const [berkasList, setBerkasList] = useState<BerkasItem[]>(INITIAL_BERKAS);
   const [activities, setActivities] = useState(RECENT_ACTIVITIES);
+
+  // Detail page state (Monitoring Pekerjaan)
+  const [viewingDetailBerkas, setViewingDetailBerkas] = useState<BerkasItem | null>(null);
 
   // Modal dialog states
   const [selectedBerkas, setSelectedBerkas] = useState<BerkasItem | null>(null);
@@ -111,11 +119,16 @@ export default function App() {
     jenisFilter?: BerkasJenis | null,
     subFilter?: KategoriSubmenu | null
   ) => {
+    setViewingDetailBerkas(null);
+    setIsAddModalOpen(false);
+    setEditingBerkas(null);
     setActiveMenu(menu);
-    if (menu === 'Dashboard') {
-      setActiveJenisFilter(null);
-      setActiveSubmenuFilter(null);
-    } else if (menu === 'Pengguna') {
+    if (
+      menu === 'Dashboard' ||
+      menu === 'Pengguna' ||
+      menu === 'Profile' ||
+      menu === 'Settings'
+    ) {
       setActiveJenisFilter(null);
       setActiveSubmenuFilter(null);
     } else if (menu === 'Waarmerking' || menu === 'Legalisasi') {
@@ -124,6 +137,32 @@ export default function App() {
     } else {
       setActiveJenisFilter(jenisFilter || null);
       setActiveSubmenuFilter(subFilter || (jenisFilter ? 'Pendirian' : null));
+    }
+  };
+
+  // Update berkas from Detail Berkas / Monitoring Pekerjaan
+  const handleUpdateBerkasFromDetail = (updated: BerkasItem) => {
+    setBerkasList((prev) =>
+      prev.map((item) => (item.id === updated.id ? updated : item))
+    );
+    setViewingDetailBerkas(updated);
+
+    const oldItem = berkasList.find((b) => b.id === updated.id);
+    if (oldItem && oldItem.status !== updated.status) {
+      setActivities((prev) => [
+        {
+          id: `act-${Date.now()}`,
+          pengguna: {
+            nama: 'Hj. Ratna Sari, S.H.',
+            peran: 'Notaris & PPAT'
+          },
+          aktivitas: `Memperbarui status berkas ${updated.noBerkas} menjadi "${updated.status}" melalui Monitoring Tahapan Pekerjaan`,
+          detailBerkas: updated.noBerkas,
+          waktu: 'Baru saja',
+          tipe: 'update'
+        },
+        ...prev
+      ]);
     }
   };
 
@@ -237,7 +276,7 @@ export default function App() {
   const handleSelectBerkasByNo = (noBerkas: string) => {
     const item = berkasList.find((b) => b.noBerkas === noBerkas);
     if (item) {
-      setSelectedBerkas(item);
+      setViewingDetailBerkas(item);
     }
   };
 
@@ -251,8 +290,8 @@ export default function App() {
         onSelectMenu={handleSelectMenu}
         isOpenMobile={isOpenMobileSidebar}
         onCloseMobile={() => setIsOpenMobileSidebar(false)}
-        onOpenProfile={() => setIsProfileModalOpen(true)}
-        onOpenSettings={() => setIsSettingsModalOpen(true)}
+        onOpenProfile={() => handleSelectMenu('Profile')}
+        onOpenSettings={() => handleSelectMenu('Settings')}
         onLogout={() => {
           setLogoutNotice(true);
           setTimeout(() => setLogoutNotice(false), 4000);
@@ -266,12 +305,60 @@ export default function App() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onToggleSidebarMobile={() => setIsOpenMobileSidebar(true)}
-          onOpenProfile={() => setIsProfileModalOpen(true)}
+          onOpenProfile={() => handleSelectMenu('Profile')}
         />
 
         {/* KONTEN UTAMA */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
-          {activeMenu === 'Pengguna' ? (
+          {isAddModalOpen ? (
+            /* TEMPLATE HALAMAN TAMBAH BERKAS (Dari Dashboard / Global) */
+            <AddBerkasPage
+              jenis={activeJenisFilter || 'PT'}
+              kategoriSubmenu={activeSubmenuFilter || 'Pendirian'}
+              onBack={() => setIsAddModalOpen(false)}
+              onSave={(newBerkas) => {
+                handleAddNewBerkas(newBerkas);
+                setIsAddModalOpen(false);
+              }}
+              existingCount={berkasList.length}
+            />
+          ) : editingBerkas ? (
+            /* TEMPLATE HALAMAN EDIT BERKAS */
+            <EditBerkasPage
+              berkas={editingBerkas}
+              onBack={() => setEditingBerkas(null)}
+              onSave={(updated) => {
+                handleSaveEdit(updated);
+                setEditingBerkas(null);
+              }}
+            />
+          ) : viewingDetailBerkas ? (
+            /* TEMPLATE HALAMAN DETAIL BERKAS / MONITORING PEKERJAAN (Akses saat klik ikon Mata di kolom aksi) */
+            <DetailBerkasPage
+              berkas={viewingDetailBerkas}
+              onBack={() => setViewingDetailBerkas(null)}
+              onUpdateBerkas={handleUpdateBerkasFromDetail}
+              currentPetugas="nurul"
+            />
+          ) : activeMenu === 'Profile' ? (
+            /* TEMPLATE HALAMAN PROFILE ADMINISTRATOR */
+            <ProfilePage
+              onBack={() => {
+                setActiveMenu('Dashboard');
+                setActiveJenisFilter(null);
+                setActiveSubmenuFilter(null);
+              }}
+            />
+          ) : activeMenu === 'Settings' ? (
+            /* TEMPLATE HALAMAN SETTINGS / PENGATURAN SISTEM */
+            <SettingsPage
+              onBack={() => {
+                setActiveMenu('Dashboard');
+                setActiveJenisFilter(null);
+                setActiveSubmenuFilter(null);
+              }}
+            />
+          ) : activeMenu === 'Pengguna' ? (
             /* TEMPLATE HALAMAN PENGGUNA (Halaman Penuh Sesuai Spesifikasi) */
             <UsersPage
               users={users}
@@ -290,9 +377,9 @@ export default function App() {
               jenis={activeJenisFilter}
               kategoriSubmenu={activeSubmenuFilter}
               berkasList={berkasList}
-              onAddNew={() => setIsAddModalOpen(true)}
-              onViewDetail={setSelectedBerkas}
-              onEdit={setEditingBerkas}
+              onAddNew={handleAddNewBerkas}
+              onViewDetail={setViewingDetailBerkas}
+              onEdit={handleSaveEdit}
               onDelete={handleDeleteBerkas}
               onToggleArchive={handleToggleArchive}
               onBackToDashboard={() => {
@@ -380,7 +467,7 @@ export default function App() {
                 <div className="lg:col-span-7 h-full">
                   <DocumentTable
                     berkasList={filteredBerkas}
-                    onViewDetail={setSelectedBerkas}
+                    onViewDetail={setViewingDetailBerkas}
                     onAddNew={() => setIsAddModalOpen(true)}
                     activeFilter={statusFilter}
                     onFilterChange={setStatusFilter}

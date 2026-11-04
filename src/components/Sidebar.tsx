@@ -329,21 +329,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Profile */}
           <button
             type="button"
-            onClick={onOpenProfile}
-            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-rose-100 hover:bg-white/10 hover:text-white transition-colors"
+            onClick={() => {
+              onSelectMenu('Profile');
+              if (isOpenMobile) onCloseMobile();
+            }}
+            className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-colors ${
+              activeMenu === 'Profile'
+                ? 'bg-white text-[#701424] font-bold shadow-md'
+                : 'text-rose-100 hover:bg-white/10 hover:text-white'
+            }`}
           >
-            <User className="w-4 h-4 text-rose-200" />
-            <span>Profile Notaris</span>
+            <User
+              className={`w-4 h-4 shrink-0 ${
+                activeMenu === 'Profile' ? 'text-[#701424]' : 'text-rose-200'
+              }`}
+            />
+            <span>Profile</span>
           </button>
 
           {/* Setting */}
           <button
             type="button"
-            onClick={onOpenSettings}
-            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-rose-100 hover:bg-white/10 hover:text-white transition-colors"
+            onClick={() => {
+              onSelectMenu('Settings');
+              if (isOpenMobile) onCloseMobile();
+            }}
+            className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-colors ${
+              activeMenu === 'Settings'
+                ? 'bg-white text-[#701424] font-bold shadow-md'
+                : 'text-rose-100 hover:bg-white/10 hover:text-white'
+            }`}
           >
-            <Settings className="w-4 h-4 text-rose-200" />
-            <span>Setting Kantor</span>
+            <Settings
+              className={`w-4 h-4 shrink-0 ${
+                activeMenu === 'Settings' ? 'text-[#701424]' : 'text-rose-200'
+              }`}
+            />
+            <span>Settings</span>
           </button>
 
           {/* Logout (Tombol keluar dengan icon logout) */}

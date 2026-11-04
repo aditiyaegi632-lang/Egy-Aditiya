@@ -11,6 +11,38 @@ export type BerkasJenis =
 
 export type KategoriSubmenu = 'Pendirian' | 'Perubahan' | 'Pembubaran';
 
+export interface RiwayatCatatanTahapan {
+  id: string;
+  tanggal: string;
+  jam: string;
+  petugas: string;
+  catatan: string;
+}
+
+export interface ChecklistItemTahapan {
+  id: string;
+  nomor: number;
+  nama: string;
+  petugas?: string;
+  jam?: string;
+  checked: boolean;
+}
+
+export interface TahapanPekerjaanItem {
+  id: string;
+  nomor: number;
+  judul: string;
+  deskripsi: string;
+  status: BerkasStatus;
+  tipeTahapan: 'khusus' | 'checklist';
+  tanggalMasuk?: string;
+  catatan?: string;
+  riwayatCatatan?: RiwayatCatatanTahapan[];
+  checklistItems?: ChecklistItemTahapan[];
+  tanggalSelesai?: string;
+  pic?: string;
+}
+
 export interface BerkasItem {
   id: string;
   noBerkas: string;
@@ -29,6 +61,7 @@ export interface BerkasItem {
   keterangan: string;
   biaya: string;
   isArchived?: boolean;
+  tahapan?: TahapanPekerjaanItem[];
   kelengkapanSyarat: {
     ktpDireksi: boolean;
     npwp: boolean;
