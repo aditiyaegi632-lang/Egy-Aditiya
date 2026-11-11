@@ -14,7 +14,7 @@ function getDefaultChecklistItems(
   judul: string,
   jenis: string,
   isCompleted: boolean,
-  currentPetugas: string = 'nurul'
+  currentPetugas: string = 'Egi'
 ): ChecklistItemTahapan[] {
   let itemNames: string[] = [];
 
@@ -94,7 +94,7 @@ function getDefaultChecklistItems(
 
 export function generateInitialTahapan(
   berkas: BerkasItem,
-  currentPetugas: string = 'nurul'
+  currentPetugas: string = 'Egi'
 ): TahapanPekerjaanItem[] {
   let templates: StageTemplate[] = [];
 

@@ -39,7 +39,7 @@ export const DetailBerkasPage: React.FC<DetailBerkasPageProps> = ({
   berkas,
   onBack,
   onUpdateBerkas,
-  currentPetugas = 'nurul' // User requested example: "nurul" atau "aa"
+  currentPetugas = 'Egi'
 }) => {
   // Check if legal service (Waarmerking or Legalisasi)
   const isLegalService = berkas.jenis === 'Waarmerking' || berkas.jenis === 'Legalisasi';

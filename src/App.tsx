@@ -338,7 +338,7 @@ export default function App() {
               berkas={viewingDetailBerkas}
               onBack={() => setViewingDetailBerkas(null)}
               onUpdateBerkas={handleUpdateBerkasFromDetail}
-              currentPetugas="nurul"
+              currentPetugas="Egi"
             />
           ) : activeMenu === 'Profile' ? (
             /* TEMPLATE HALAMAN PROFILE ADMINISTRATOR */
